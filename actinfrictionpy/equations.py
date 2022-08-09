@@ -28,7 +28,7 @@ ParamsRing = collections.namedtuple(
         "KdD",
         "cX",
         "tend",
-        "lamba0",
+        "lambda0",
         "Ndtot0",
     ],
 )
