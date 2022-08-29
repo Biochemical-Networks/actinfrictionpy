@@ -195,25 +195,6 @@ class ZetaDoubleExpPlot(Plot):
         self._ax.set_xlabel(r"$t / \si{\second}$")
 
 
-class ZetaSingleExpPlot(Plot):
-    """Plot time series of single exponent friction coefficient."""
-
-    def plot(self, df, *args, **kwargs):
-        self._ax.plot(df.t, df.zeta_Nd_single_exp, *args, **kwargs)
-
-    def plot_meanvar(self, df_means, df_vars, *args, **kwargs):
-        super().plot_meanvar(
-            df_means.t,
-            df_means.zeta_Nd_single_exp,
-            df_vars.zeta_Nd_single_exp,
-            *args,
-            **kwargs
-        )
-
-    def setup_axis(self):
-        self._ax.set_ylabel(r"$\zeta_\text{se}$")
-
-
 class ZetaContinuouslPlot(Plot):
     """Plot time series of continuous l friction coefficient."""
 
@@ -242,13 +223,10 @@ class AllZetaPlot(Plot):
         self._ax.plot(
             dfs[1].t, dfs[1].zeta_Nd_double_exp, color=colors[1], *args, **kwargs
         )
-        self._ax.plot(
-            dfs[2].t, dfs[2].zeta_Nd_single_exp, color=colors[2], *args, **kwargs
-        )
         super().plot_meanvar(
-            dfs[3][0].t,
-            dfs[3][0].zeta_continuous_l,
-            dfs[3][1].zeta_continuous_l,
+            dfs[2][0].t,
+            dfs[2][0].zeta_continuous_l,
+            dfs[2][1].zeta_continuous_l,
             color=colors[3],
             *args,
             **kwargs

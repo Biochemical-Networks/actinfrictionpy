@@ -23,7 +23,7 @@ ParamsRing = collections.namedtuple(
         "Nsca",
         "EI",
         "Lf",
-        "zeta0",
+        "r0",
         "KsD",
         "KdD",
         "cX",
@@ -46,10 +46,20 @@ ParamsLinear = collections.namedtuple(
         "deltad",
         "k",
         "T",
-        "zeta0",
+        "r0",
         "Fcond",
     ],
 )
+
+
+def zeta0(p):
+    return (
+        constants.k
+        * p.T
+        / p.deltas**2
+        / p.r0
+        * np.sqrt(1 + 3 * p.k * p.deltas**2 / 4 / constants.k / p.T)
+    )
 
 
 def bending_force(lmbda, p):
@@ -92,14 +102,14 @@ def friction_coefficient_linear_cX(lmbda, p):
     B = p.k * p.deltas**2 / (8 * constants.k * p.T) - math.log(2)
     C = (z + 1) / (z * np.exp(-B * np.exp((rhod + rhos) / (4 * B))) + 1)
 
-    return p.zeta0 * C ** (1 + p.deltas / p.deltad * lmbda)
+    return zeta0(p) * C ** (1 + p.deltas / p.deltad * lmbda)
 
 
 def friction_coefficient_linear_Nd(lmbda, Nd, p):
     B = p.k * p.deltas**2 / (8 * constants.k * p.T) - math.log(2)
     innerexp = Nd / ((1 + p.deltas / p.deltad * lmbda) * 4 * B)
 
-    return p.zeta0 * np.exp(Nd * B * np.exp(innerexp))
+    return zeta0(p) * np.exp(Nd * B * np.exp(innerexp))
 
 
 def friction_coefficient_ring_cX(lmbda, p):
@@ -111,15 +121,15 @@ def friction_coefficient_ring_cX(lmbda, p):
     B = p.k * p.deltas**2 / (8 * constants.k * p.T) - math.log(2)
     C = (z + 1) / (z * np.exp(-B * np.exp((rhod + rhos) / (4 * B))) + 1)
 
-    return p.zeta0 * C ** ((1 + p.deltas / p.deltad * lmbda) * (2 * p.Nf - p.Nsca))
+    return zeta0(p) * C ** ((1 + p.deltas / p.deltad * lmbda) * (2 * p.Nf - p.Nsca))
 
 
 def friction_coefficient_ring_Nd(lmbda, Nd, p):
-    overlaps = 2*p.Nf - p.Nsca
+    overlaps = 2 * p.Nf - p.Nsca
     B = p.k * p.deltas**2 / (8 * constants.k * p.T) - math.log(2)
     innerexp = Nd / ((1 + p.deltas / (p.deltad * overlaps) * lmbda) * overlaps * 4 * B)
 
-    return p.zeta0 * np.exp(Nd * B * np.exp(innerexp))
+    return zeta0(p) * np.exp(Nd * B * np.exp(innerexp))
 
 
 def equation_of_motion_linear_cX(t, lmbda, p):
