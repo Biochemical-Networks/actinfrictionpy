@@ -1,13 +1,13 @@
 """Implementation of overdamped equations of motion."""
 
-import collections
 import math
 
 import numpy as np
+from recordclass import recordclass
 from scipy import constants
 
 
-ParamsRing = collections.namedtuple(
+ParamsRing = recordclass(
     "ParamsRing",
     [
         "k01",
@@ -23,7 +23,10 @@ ParamsRing = collections.namedtuple(
         "Nsca",
         "EI",
         "Lf",
-        "r0",
+        "Df",
+        "eta",
+        "Ds",
+        "n",
         "KsD",
         "KdD",
         "cX",
@@ -34,7 +37,7 @@ ParamsRing = collections.namedtuple(
 )
 
 
-ParamsLinear = collections.namedtuple(
+ParamsLinear = recordclass(
     "ParamsLinear",
     [
         "k01",
@@ -52,14 +55,43 @@ ParamsLinear = collections.namedtuple(
 )
 
 
-def zeta0(p):
-    return (
-        constants.k
-        * p.T
-        / p.deltas**2
-        / p.r0
-        * np.sqrt(1 + 3 * p.k * p.deltas**2 / 4 / constants.k / p.T)
-    )
+ParamsHarmonicOscillator = recordclass(
+    "ParamsHarmonicOscillator",
+    [
+        "gamma0",
+        "k",
+        "T",
+    ],
+)
+
+
+def l_to_lambda(l, p):
+    """Convert from continuous number of sites in an overlap to lambda."""
+    return (l - 1) * p.deltad / p.deltas
+
+
+def lambda_to_l(lmbda, p):
+    """
+    Convert from lambda to continuous number of sites in an overlap.
+    """
+    return 1 + p.deltas / p.deltad * lmbda
+
+
+def lambda_to_l_discrete(lmbda, p):
+    """
+    Convert from lambda to discrete number of sites in an overlap.
+    """
+    return math.floor(p.deltas / p.deltad * lmbda) + 1
+
+
+def lambda_to_R(lmbda, p):
+    """Convert from ring radius to lambda."""
+    return p.Nsca / (2 * math.pi) * (p.Lf - p.deltas * lmbda)
+
+
+def R_to_lambda(R, p):
+    """Convert from ring radius to lambda."""
+    return 1 / p.deltas * (p.Lf - 2 * math.pi * R / p.Nsca)
 
 
 def bending_force(lmbda, p):
@@ -93,78 +125,6 @@ def entropic_force(lmbda, Nd, p):
     return overlaps * constants.k * p.T * np.log(logarg) / p.deltad
 
 
-def friction_coefficient_linear_cX(lmbda, p):
-    zs = p.r01 / p.r10
-    zd = p.r01 * p.r12 / (p.r10 * p.r21)
-    z = zd / (1 + zs) ** p.k
-    rhos = (zs + zs**2) / ((1 + zs) ** 2 + zd)
-    rhod = z / (1 + z)
-    B = p.k * p.deltas**2 / (8 * constants.k * p.T) - math.log(2)
-    C = (z + 1) / (z * np.exp(-B * np.exp((rhod + rhos) / (4 * B))) + 1)
-
-    return zeta0(p) * C ** (1 + p.deltas / p.deltad * lmbda)
-
-
-def friction_coefficient_linear_Nd(lmbda, Nd, p):
-    B = p.k * p.deltas**2 / (8 * constants.k * p.T) - math.log(2)
-    innerexp = Nd / ((1 + p.deltas / p.deltad * lmbda) * 4 * B)
-
-    return zeta0(p) * np.exp(Nd * B * np.exp(innerexp))
-
-
-def friction_coefficient_ring_cX(lmbda, p):
-    zs = p.r01 / p.r10
-    zd = p.r01 * p.r12 / (p.r10 * p.r21)
-    z = zd / (1 + zs) ** 2
-    rhos = (zs + zs**2) / ((1 + zs) ** 2 + zd)
-    rhod = z / (1 + z)
-    B = p.k * p.deltas**2 / (8 * constants.k * p.T) - math.log(2)
-    C = (z + 1) / (z * np.exp(-B * np.exp((rhod + rhos) / (4 * B))) + 1)
-
-    return zeta0(p) * C ** ((1 + p.deltas / p.deltad * lmbda) * (2 * p.Nf - p.Nsca))
-
-
-def friction_coefficient_ring_Nd(lmbda, Nd, p):
-    overlaps = 2 * p.Nf - p.Nsca
-    B = p.k * p.deltas**2 / (8 * constants.k * p.T) - math.log(2)
-    innerexp = Nd / ((1 + p.deltas / (p.deltad * overlaps) * lmbda) * overlaps * 4 * B)
-
-    return zeta0(p) * np.exp(Nd * B * np.exp(innerexp))
-
-
-def equation_of_motion_linear_cX(t, lmbda, p):
-    zeta = friction_coefficient_linear_cX(lmbda, p)
-
-    return p.Fcond / (p.deltas * zeta)
-
-
-def equation_of_motion_linear_Nd(t, y, p):
-    zeta = friction_coefficient_linear_Nd(y[0], y[1], p)
-
-    dlmbda_dt = entropic_force(y[0], y[1], p) / (p.deltas * zeta)
-    ltot = 1 + p.deltas / p.deltad * y[0]
-    dN_dt = p.cX * p.k01 * p.r12 * ltot - (p.cX * p.k01 * p.r12 - p.r21 * p.r10) * y[1]
-
-    return [dlmbda_dt, dN_dt]
-
-
-def equation_of_motion_ring_cX(t, lmbda, p):
-    zeta = friction_coefficient_ring_cX(lmbda, p)
-    forcetot = bending_force(lmbda, p) + condensation_force(p)
-
-    return -forcetot / (zeta * p.deltas * (2 * p.Nf - p.Nsca))
-
-
-def equation_of_motion_ring_Nd(t, y, p):
-    zeta = friction_coefficient_ring_Nd(y[0], y[1], p)
-    forcetot = bending_force(y[0], p) + entropic_force(y[0], y[1], p)
-    ltot = (1 + p.deltas / p.deltad * y[0]) * (2 * p.Nf - p.Nsca)
-    dlmbda_dt = -forcetot / (zeta * p.deltas * (2 * p.Nf - p.Nsca))
-    dN_dt = p.cX * p.k01 * p.r12 * ltot - (p.cX * p.k01 * p.r12 - p.r21 * p.r10) * y[1]
-
-    return [dlmbda_dt, dN_dt]
-
-
 def calc_equilibrium_ring_radius(p) -> float:
     """Calculate the equilibrium radius of a ring analytically."""
     num = p.EI * p.Nf * p.deltad * p.Lf * p.Nsca
@@ -178,3 +138,11 @@ def calc_equilibrium_ring_radius(p) -> float:
     )
 
     return (num / denom) ** (1 / 3)
+
+
+def calc_equilibrium_occupancy(p) -> float:
+    """Calculate the equilibrium occupancy."""
+    xi_d = p.cX / p.KdD
+    xi_s = p.cX / p.KsD
+
+    return xi_d / ((1 + xi_s) ** 2 + xi_d)
