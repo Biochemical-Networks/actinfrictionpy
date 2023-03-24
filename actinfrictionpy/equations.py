@@ -59,6 +59,7 @@ ParamsHarmonicOscillator = recordclass(
     "ParamsHarmonicOscillator",
     [
         "gamma0",
+        "a",
         "k",
         "T",
     ],

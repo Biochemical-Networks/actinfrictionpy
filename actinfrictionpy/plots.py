@@ -82,9 +82,7 @@ class XPlot(Plot):
         self._ax.plot(df.t, df.x, *args, **kwargs)
 
     def plot_meanvar(self, df_means, df_vars, *args, **kwargs):
-        super().plot_meanvar(
-            df_means.t, df_means.x, df_vars.x, *args, **kwargs
-        )
+        super().plot_meanvar(df_means.t, df_means.x, df_vars.x, *args, **kwargs)
 
     def setup_axis(self):
         self._ax.set_ylabel(r"$x / \si{\meter}$")
@@ -103,7 +101,8 @@ class EquilibriumRadiusFractionPlot(Plot):
         )
 
     def setup_axis(self):
-        self._ax.set_ylabel(r"$\frac{R_\text{max} - R}{R_\text{max} - R_\text{eq}}$")
+        #        self._ax.set_ylabel(r"$(R_\text{max} - R) / (R_\text{max} - R_\text{eq})$")
+        self._ax.set_ylabel(r"$\phi_\text{R}")
         self._ax.set_xlabel(r"$t / \si{\second}$")
 
 
@@ -157,7 +156,7 @@ class TotalForcePlot(Plot):
         )
 
     def setup_axis(self):
-        self._ax.set_ylabel(r"$F_\text{tot} / \si{\pico\newton}$")
+        self._ax.set_ylabel(r"$F / \si{\pico\newton}$")
         self._ax.set_xlabel(r"$t / \si{\second}$")
 
 
@@ -169,11 +168,7 @@ class dRdtPlot(Plot):
 
     def plot_meanvar(self, df_means, df_vars, *args, **kwargs):
         super().plot_meanvar(
-            df_means.t,
-            df_means.dR_dt / 1e-6,
-            df_vars.dR_dt / 1e-12,
-            *args,
-            **kwargs
+            df_means.t, df_means.dR_dt / 1e-6, df_vars.dR_dt / 1e-12, *args, **kwargs
         )
 
     def setup_axis(self):
@@ -276,10 +271,11 @@ class ZetacXPlot(Plot):
         )
 
     def setup_axis(self):
-#        self._ax.set_ylabel(r"$\zeta_\text{cond} / \si{\second\per\kilo\gram}$")
+        #        self._ax.set_ylabel(r"$\zeta_\text{cond} / \si{\second\per\kilo\gram}$")
         self._ax.set_ylabel(r"$\zeta / \si{\second\per\kilo\gram}$")
         self._ax.set_xlabel(r"$t / \si{\second}$")
         self._ax.set_yscale("log")
+        self._ax.minorticks_off()
 
 
 class ZetaNdExpPlot(Plot):
@@ -297,6 +293,7 @@ class ZetaNdExpPlot(Plot):
         self._ax.set_ylabel(r"$\zeta / \si{\second\per\kilo\gram}$")
         self._ax.set_xlabel(r"$t / \si{\second}$")
         self._ax.set_yscale("log")
+        self._ax.minorticks_off()
 
 
 class ZetaNdExactPlot(Plot):
@@ -314,43 +311,30 @@ class ZetaNdExactPlot(Plot):
         self._ax.set_ylabel(r"$\zeta / \si{\second\per\kilo\gram}$")
         self._ax.set_xlabel(r"$t / \si{\second}$")
         self._ax.set_yscale("log")
+        self._ax.minorticks_off()
 
 
 class AllZetaPlot(Plot):
     """Plot time series of each type of friction coefficient"""
 
     def plot_comparison(self, dfs, colors, *args, **kwargs):
-        self._ax.plot(dfs[0].t, dfs[0].zeta_cX, color=colors[0], *args, **kwargs)
+        self._ax.plot(dfs[2].t, dfs[2].zeta_Nd_exp, color=colors[2], *args, **kwargs)
         self._ax.plot(dfs[1].t, dfs[1].zeta_Nd_exp, color=colors[1], *args, **kwargs)
-        super().plot_meanvar(
-            dfs[2][0].t,
-            dfs[2][0].zeta_Nd_exact,
-            dfs[2][1].zeta_Nd_exact,
-            color=colors[2],
-            *args,
-            **kwargs
-        )
+        self._ax.plot(dfs[0].t, dfs[0].zeta_cX, color=colors[0], *args, **kwargs)
+        # super().plot_meanvar(
+        #    dfs[2][0].t,
+        #    dfs[2][0].zeta_Nd_exact,
+        #    dfs[2][1].zeta_Nd_exact,
+        #    color=colors[2],
+        #    *args,
+        #    **kwargs
+        # )
 
     def setup_axis(self):
         self._ax.set_ylabel(r"$\zeta / \si{\second\per\kilo\gram}$")
         self._ax.set_xlabel(r"$t / \si{\second}$")
         self._ax.set_yscale("log")
-
-
-class BarrierNdPlot(Plot):
-    """Plot the free energy barrier as a function of Nd for a set of k"""
-
-    def plot_comparison(self, df, ks, colors, *args, **kwargs):
-        # get unique ks
-        for color, k in zip(ks, colors):
-            DF_exps = df[(df.k == k) & (df.method == "exp")]
-            DF_exacts = df[(df.k == k) & (df.method == "exacts")]
-            self._ax.plot(DF_exps.Nd, DF_exps.DF, color=color, *args, **kwargs)
-            self._ax.plot(DF_exacts.Nd, DF_exacts.DF, color=color, *args, **kwargs)
-
-    def setup_axis(self):
-        self._ax.set_ylabel(r"$\beta \upDelta \mathcal{F}^\ddag$")
-        self._ax.set_xlabel(r"$N_\text{d}$")
+        self._ax.minorticks_off()
 
 
 class BarrierNdPlot(Plot):
@@ -370,7 +354,8 @@ class BarrierNdPlot(Plot):
                 DF_cXs.l,
                 DF_cXs.DF,
                 #                color=styles.TEXTBLACK,
-                color=cmap(0),
+                #                color=cmap(0),
+                color=color,
                 linestyle="",
                 marker=markers[2],
                 *args,
@@ -380,7 +365,8 @@ class BarrierNdPlot(Plot):
                 DF_exps.Nd,
                 DF_exps.DF,
                 #                color=styles.TEXTBLACK,
-                color=cmap(2),
+                #                color=cmap(2),
+                color=color,
                 linestyle="",
                 marker=markers[1],
                 *args,
@@ -416,5 +402,5 @@ class Kramersr0NdPlot(Plot):
             self._ax.plot(r0.Nd, r0.r0 / 1000, color=color, *args, **kwargs)
 
     def setup_axis(self):
-        self._ax.set_ylabel(r"$r_0 / 1000$")
+        self._ax.set_ylabel(r"$r_0 / \qty{1000}{\per\second}$")
         self._ax.set_xlabel(r"$N_\text{d}$")
