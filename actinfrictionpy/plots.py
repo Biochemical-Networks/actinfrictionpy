@@ -1,15 +1,11 @@
-"""Plot types."""
+"""Plotting classes.
+
+Each plot type has its own class which inherits from a base class, Plot. See the
+docstring of that class for more details.
+"""
 
 
 import matplotlib.pyplot as plt
-
-# from matplotlib import cm
-# from matplotlib import ticker
-from matplotlibstyles import plotutils, styles
-
-# import numpy as np
-# import pandas as pd
-# from scipy import interpolate
 
 
 class Plot:

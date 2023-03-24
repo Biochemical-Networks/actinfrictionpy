@@ -1,7 +1,13 @@
-"""Functions for naming calculation outputs."""
+"""Classes and functions for naming calculation outputs."""
+
+from recordclass import recordclass
 
 
 def savename(prefix, params, digits=2, suffix=None, ignored_fields=[]):
+    """Generate standard filename from given set of parameter key, value pairs.
+
+    Based on the function in the Dr. Watson Julia package.
+    """
     sorted_items = sorted(params._asdict().items())
     filename = [prefix]
     for key, value in sorted_items:
@@ -23,3 +29,63 @@ def savename(prefix, params, digits=2, suffix=None, ignored_fields=[]):
         filename += f"{suffix}"
 
     return filename
+
+
+# Record classes for model parameters
+ParamsRing = recordclass(
+    "ParamsRing",
+    [
+        "k01",
+        "r01",
+        "r10",
+        "r12",
+        "r21",
+        "deltas",
+        "deltad",
+        "k",
+        "T",
+        "Nf",
+        "Nsca",
+        "EI",
+        "Lf",
+        "Df",
+        "eta",
+        "Ds",
+        "n",
+        "KsD",
+        "KdD",
+        "cX",
+        "tend",
+        "lambda0",
+        "Ndtot0",
+    ],
+)
+
+
+ParamsLinear = recordclass(
+    "ParamsLinear",
+    [
+        "k01",
+        "r01",
+        "r10",
+        "r12",
+        "r21",
+        "deltas",
+        "deltad",
+        "k",
+        "T",
+        "r0",
+        "Fcond",
+    ],
+)
+
+
+ParamsHarmonicOscillator = recordclass(
+    "ParamsHarmonicOscillator",
+    [
+        "gamma0",
+        "a",
+        "k",
+        "T",
+    ],
+)
